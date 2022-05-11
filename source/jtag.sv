@@ -78,7 +78,6 @@ localparam GO_EXIT = 4'b1100;
 //local signal
 //////////////////////////////////////////////////
 logic [15:0] count;
-logic [15:0] counttransaction; 
 logic [(DATA_TMS - 1) :0] shifttms;
 logic [(DATA_TMS - 1) :0] nextshifttms;
 logic [(DATA_INSTRACTION - 1) :0] shiftinstraction;
@@ -104,21 +103,6 @@ always_ff @(posedge clk) begin
     else begin
         count <= 0;
     end
-end
-
-//////////////////////////////////////////////////
-//counter of transaction
-//////////////////////////////////////////////////
-always_ff @(posedge clk) begin
-    if (rst) begin
-            counttransaction <= 0;
-        end
-    else if ((len + 2 * DATA_TMS) == counttransaction) begin
-            counttransaction <= 0;
-        end
-    else if ((countenable == 1) && (((DELAY + FREQUENCY_DIVIDER * 2 * counttransaction) - count) == 1))  begin
-            counttransaction <= counttransaction + 1;
-        end
 end
 
 //////////////////////////////////////////////////
@@ -179,30 +163,30 @@ always_ff @(posedge clk) begin
                 else if (count == (DELAY - FREQUENCY_DIVIDER * 2)) begin
                     shifttms [(DATA_TMS - 1):0] <= GO_SHIFT_IR;
                 end
-                else if ((count > (DELAY - 1)) && (count < (FREQUENCY_DIVIDER * 2 * len + FREQUENCY_DIVIDER * 4 * DATA_TMS + DELAY)) && (count == ((counttransaction - 1) * FREQUENCY_DIVIDER * 2 + DELAY))) begin 
-                    if (counttransaction < (DATA_TMS + 1)) begin
-                        if (counttransaction == DATA_TMS) begin
+                else if ((count > (DELAY - 1)) && (count < (FREQUENCY_DIVIDER * 2 * len + FREQUENCY_DIVIDER * 4 * DATA_TMS + DELAY)) && (count[FREQUENCY_DIVIDER - 1] == 0)) begin 
+                    if (count < ((DATA_TMS + 1) * FREQUENCY_DIVIDER * 2 + DELAY)) begin
+                        if (count == (DATA_TMS * FREQUENCY_DIVIDER * 2 + DELAY)) begin
                             shifttms <= {nextshifttms[(DATA_TMS - 2):0], 1'b0};
                             shiftinstraction [(DATA_INSTRACTION - 1):0] <= rdata_instraction [(DATA_INSTRACTION - 1):0];
                             rd_instraction <= 1;
-								end
+						end
                         else begin
                             shifttms <= {nextshifttms[(DATA_TMS - 2):0], 1'b0};
                             rd_instraction <= 0;
                         end
                     end
-                    else if (counttransaction < (DATA_TMS + len + 1)) begin
-                        if (counttransaction == (DATA_TMS + len)) begin 
+                    else if (count < ((DATA_TMS + len) * FREQUENCY_DIVIDER * 2 + DELAY)) begin
+                        if (count == ((DATA_TMS + len - 1) * FREQUENCY_DIVIDER * 2 + DELAY)) begin 
                             shifttms [(DATA_TMS - 1):0] <= GO_EXIT;
-                            shiftinstraction <= {nextshiftinstraction [(DATA_INSTRACTION-2):0], 1'b0};
+                            shiftinstraction <= {nextshiftinstraction [(DATA_INSTRACTION - 2):0], 1'b0};
                             rd_instraction <= 0;
-								end
+						end
                         else begin
-                            shiftinstraction <= {nextshiftinstraction [(DATA_INSTRACTION-2):0], 1'b0};
+                            shiftinstraction <= {nextshiftinstraction [(DATA_INSTRACTION - 2):0], 1'b0};
                             rd_instraction <= 0;
                         end
                     end
-                    else if (counttransaction < (DATA_TMS * 2 + len + 1)) begin
+                    else if (count < ((DATA_TMS * 2 + len)  * FREQUENCY_DIVIDER * 2 + DELAY)) begin
                         shifttms <= {nextshifttms[(DATA_TMS - 2):0],1'b0};
                         rd_instraction <= 0;
                     end
@@ -222,14 +206,14 @@ always_ff @(posedge clk) begin
                 else if (count == (DELAY - FREQUENCY_DIVIDER * 2)) begin
                     shifttms [(DATA_TMS - 1):0] <= GO_SHIFT_DR;
                 end
-                else if ((count > (DELAY - 1)) && (count < (FREQUENCY_DIVIDER * 2 * len + FREQUENCY_DIVIDER * 4 * DATA_TMS + DELAY)) && (count == ((counttransaction - 1) * FREQUENCY_DIVIDER * 2 + DELAY))) begin 
-                    if (counttransaction < (DATA_TMS + 1)) begin
+                else if ((count > (DELAY - 1)) && (count < (FREQUENCY_DIVIDER * 2 * len + FREQUENCY_DIVIDER * 4 * DATA_TMS + DELAY)) && (count[FREQUENCY_DIVIDER - 1] == 0)) begin 
+                    if (count < ((DATA_TMS + 1)  * FREQUENCY_DIVIDER * 2 + DELAY)) begin
                         shifttms <= {nextshifttms[(DATA_TMS - 2):0], 1'b0};
                     end
-                    else if (counttransaction == (DATA_TMS + len)) begin 
+                    else if (count == ((DATA_TMS + len - 1)  * FREQUENCY_DIVIDER * 2 + DELAY)) begin 
                         shifttms [(DATA_TMS - 1):0] <= GO_EXIT;
                     end
-                    else if (counttransaction < (DATA_TMS * 2 + len + 1)) begin
+                    else if (count < ((DATA_TMS * 2 + len)  * FREQUENCY_DIVIDER * 2 + DELAY)) begin
                         shifttms <= {nextshifttms[(DATA_TMS - 2):0], 1'b0};
                     end
                 end 
