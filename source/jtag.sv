@@ -4,7 +4,7 @@
 //@author: Yafizov Airat
 //@date: 05.05.2022
 //@version: 1.0.0
-//@description: jtag_interface
+//@description: jtag_interface //TODO - подробное описание
 //~:)
 //////////////////////////////////////////////////
 
